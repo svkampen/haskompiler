@@ -1,0 +1,13 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "haskompiler:lib"
+
+    - path: "./app/Main.hs"
+      component: "haskompiler:exe:haskompiler"
+
+    - path: "./app/Paths_haskompiler.hs"
+      component: "haskompiler:exe:haskompiler"
+
+    - path: "./test"
+      component: "haskompiler:test:haskompiler-test"

@@ -1,0 +1,75 @@
+name:                haskompiler
+version:             0.1.0.0
+github:              "svkampen/haskompiler"
+license:             BSD3
+author:              "Sam van Kampen"
+maintainer:          "sam@tehsvk.net"
+copyright:           "2020 Sam van Kampen"
+
+custom-setup:
+  dependencies:
+    - base
+    - Cabal
+    - process
+    - directory
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/svkampen/haskompiler#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- array
+- megaparsec
+- text
+- containers
+- syb
+- parser-combinators
+- safe
+- mtl
+- lens
+- ansi-terminal
+- pcre-light
+- bytestring
+- template-haskell
+- data-default
+
+library:
+  source-dirs: src
+  other-modules: Tokens
+
+executables:
+  haskompiler:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -Wall
+    - -Wno-name-shadowing
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - haskompiler
+
+tests:
+  haskompiler-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -Wall
+    - -Wno-name-shadowing
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - haskompiler
+    - hspec
