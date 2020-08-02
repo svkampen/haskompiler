@@ -8,7 +8,7 @@ Currently, the project is still in early stages. The lexer and parser are mostly
 Documentation is also still _very_ sparse &mdash; I'm working on improving it.
 
 ## Components
-The compiler is currently structured into three main components: an [Alex](https://www.haskell.org/alex/)-based lexer (`src/Tokens.x`), a [Megaparsec](https://github.com/mrkkrp/megaparsec/)-based parser (`src/Parser/`), and a set of AST traversals (`src/Traversal.hs` for common traversal code, `src/Traversals/` for the individual traversals).
+The compiler is currently structured into three main components: an [Alex](https://www.haskell.org/alex/)-based lexer (`lexer/Tokens.x`), a [Megaparsec](https://github.com/mrkkrp/megaparsec/)-based parser (`src/Parser/`), and a set of AST traversals (`src/Traversal.hs` for common traversal code, `src/Traversals/` for the individual traversals).
 
 ## Building and running
 `Setup.hs` will automatically generate the lexer, but it requires `alex` to be on your executable path. Aside from that dependency, everything should be resolved automatically when building via Stack.
