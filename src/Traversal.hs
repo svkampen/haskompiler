@@ -128,6 +128,4 @@ everywhereUntilMatchM' f = go
 everywhereM' :: forall m. Monad m => (forall d. Data d => d -> m d) -> (forall d. Data d => d -> m d)
 everywhereM' f = go
     where go :: GenericM m
-          go x = do
-            x' <- f x
-            gmapM go x'
+          go = f >=> gmapM go
