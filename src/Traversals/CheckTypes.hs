@@ -81,10 +81,6 @@ mkM' f =
 
 ctTraversal :: Data d => d -> CTTraversal d
 ctTraversal = everywhereUntilMatchM' (mkM' ctExpr')
-ctTest :: Data d => d -> (d, TraversalState TypeInfo)
-ctTest dat = runState (unASTT $ travDown dat) (TraversalState (topLoc symTable) [] (Info TVoid))
-
-res = ctTest [cvstmt|foo = false % true;|]
 
 runCTTraversal :: Data d => (d, TraversalState c) -> (d, TraversalState TypeInfo)
 runCTTraversal (res, state) = runState (unASTT $ ctTraversal res) $ (traversalData %~ const (Info AST.TVoid)) state

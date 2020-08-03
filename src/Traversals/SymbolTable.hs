@@ -39,7 +39,6 @@ varRegistrar fb@(AST.FB vardecls _) = do
     astSTup
     return fb
         where addVardecl (AST.VarDecl ty name _ span) = do
-                emitDiagnostic $ warningAt span ("unused local variable " ++ smartQuote name)
                 astAddSymbol (var ty name span)
 
 stTraversal :: Data d => d -> STTraversal d
