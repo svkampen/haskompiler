@@ -46,7 +46,7 @@ instance MonadFail (ASTTraversal cC) where
 
 -- | Emit a diagnostic, adding it to the diagnostic stack in an 'ASTTraversal'
 emitDiagnostic :: Diagnostic -> ASTTraversal c ()
-emitDiagnostic d = modifyComponentM errors $ return . (d:)
+emitDiagnostic d = modifyComponent errors (d:)
 
 -- | Emit a list of diagnostics. See 'emitDiagnostic'.
 emitDiagnostics :: [Diagnostic] -> ASTTraversal c ()
@@ -59,6 +59,9 @@ modifyM f = get >>= f >>= put
 -- | Monadic modification over a component of the state.
 modifyComponentM :: MonadState state m => Lens' state component -> (component -> m component) -> m ()
 modifyComponentM lens fun = modifyM $ lens fun
+
+modifyComponent :: MonadState state m => Lens' state component -> (component -> component) -> m ()
+modifyComponent lens fun = modify $ (lens %~ fun)
 
 -- | Monadic mapping over a component of the state.
 mapComponentM :: MonadState state m => Lens' state component -> (component -> m result) -> m result
