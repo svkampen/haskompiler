@@ -62,7 +62,7 @@ quoteParser :: Data a => (a -> TH.Q b) -> Parser a -> String -> TH.Q b
 quoteParser fn parser str = do
     th_loc <- TH.location
 
-    let (filename, sPos@(sLine, sCol), ePos@(eLine, eCol)) = posInfo th_loc
+    let (filename, sPos@(sLine, sCol), ePos) = posInfo th_loc
         result = Parser.runWithConfig qqCfg (parser <* MP.eof) filename str
         fixSourcePos :: SourcePos -> SourcePos
         fixSourcePos sp = let line  = unPos (sourceLine sp)
