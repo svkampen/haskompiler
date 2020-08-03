@@ -43,10 +43,13 @@ instance Show Type where
   show TBool = "bool"
   show TFloat = "float"
 
+-- | A top-level declaration.
 data Decl = GlobalDecl Global | FunctionDecl Function deriving (Show, Data, Typeable, Generic, HasSpan)
 
+-- | The visibility of a declaration.
 data Visibility = Export | Extern | Internal deriving (Eq, Show, Typeable, Data, Enum, Bounded)
 
+-- | A Civic expression.
 data Expr
   = Var String SourceSpan
   | IntConst Int SourceSpan
@@ -74,21 +77,16 @@ data Expr
   | AntiBool String SourceSpan
   deriving (Eq, Show, Typeable, Data, Generic, HasSpan)
 
--- Local variable declaration
-
+-- | A local variable declaration.
 data VarDecl = VarDecl { vtype :: Type, name :: String, initializer :: Maybe Expr, __span :: SourceSpan } deriving (Show, Eq, Data, Typeable, Generic, HasSpan)
 
--- Global variable declaration
-
+-- | A global variable declaration.
 data Global = Global { isExtern :: Bool, varType :: Type, name :: String, initializer :: Maybe Expr, __span :: SourceSpan } deriving (Show, Typeable, Data, Generic, HasSpan)
 
-
--- Function parameters
+-- | Function parameter declaration.
 data Param = Param Type String deriving (Show, Data)
 
-
--- Function and body
-
+-- | A function declaration, optionally with body
 data Function = Function {
     fnVisibility :: Visibility,
     fnReturnType :: Type,
@@ -98,12 +96,13 @@ data Function = Function {
     span :: SourceSpan
 } deriving (Show, Typeable, Data, Generic, HasSpan)
 
+-- | A function body.
 data Funbody = FB {
     vardecls :: [VarDecl],
     stmts :: [Statement]
 } deriving (Show, Typeable, Data)
 
-
+-- | A statement.
 data Statement = Assign String Expr
                | CallStmt String [Expr]
                | If Expr [Statement] [Statement]
