@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 module Traversals.SymbolTable
-    (stTraversal)
+    (stTraversal, runSTTraversal)
     where
 
 import Traversal
@@ -9,6 +9,7 @@ import Errors
 import Symbol
 import Data.Generics
 import Control.Monad
+import Control.Lens
 import Text.Printf
 
 type STTraversal = ASTTraversal ()
@@ -41,5 +42,8 @@ varRegistrar fb@(AST.FB vardecls _) = do
                 emitDiagnostic $ warningAt span ("unused local variable " ++ smartQuote name)
                 astAddSymbol (var ty name span)
 
-stTraversal :: [AST.Decl] -> STTraversal [AST.Decl]
+stTraversal :: Data d => d -> STTraversal d
 stTraversal = everywhereM' (mkM fnRegistrar)
+
+runSTTraversal :: Data d => (d, TraversalState c) -> (d, TraversalState ())
+runSTTraversal (res, state) = runASTTraversal (stTraversal res) (state & traversalData %~ const ())

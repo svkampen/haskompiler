@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes, ScopedTypeVariables, TypeFamilies, TypeApplications #-}
 module Traversals.CheckTypes
-    (ctTraversal, ctTest, res)
+    (ctTraversal, runCTTraversal)
     where
 
 import QuasiQuoter
@@ -13,6 +13,7 @@ import Data.Generics hiding (typeRep)
 import Type.Reflection
 import Control.Monad.State
 import Text.Printf
+import Control.Lens
 
 newtype TypeInfo = Info { inferredType :: Type } deriving (Show)
 
@@ -69,7 +70,8 @@ ctExpr e@(Mod e1 e2 _) = do
 travDown :: Data d => d -> CTTraversal d
 travDown = ctTraversal
 
-a = (Just<$>) . ctExpr
+ctExpr' :: Expr -> ASTTraversal TypeInfo (Maybe Expr)
+ctExpr' = (fmap <$> fmap) Just ctExpr
 
 mkM' :: forall m a b. (Monad m, Typeable a, Typeable b) => (a -> m (Maybe a)) -> b -> m (Maybe b)
 mkM' f =
@@ -78,10 +80,11 @@ mkM' f =
       _ -> return . const Nothing
 
 ctTraversal :: Data d => d -> CTTraversal d
-ctTraversal = everywhereUntilMatchM' (mkM' a)
-
+ctTraversal = everywhereUntilMatchM' (mkM' ctExpr')
 ctTest :: Data d => d -> (d, TraversalState TypeInfo)
 ctTest dat = runState (unASTT $ travDown dat) (TraversalState (topLoc symTable) [] (Info TVoid))
 
 res = ctTest [cvstmt|foo = false % true;|]
 
+runCTTraversal :: Data d => (d, TraversalState c) -> (d, TraversalState TypeInfo)
+runCTTraversal (res, state) = runState (unASTT $ ctTraversal res) $ (traversalData %~ const (Info AST.TVoid)) state
