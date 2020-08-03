@@ -50,7 +50,7 @@ ctExpr e@BoolConst{} = inferType TBool >> return e
 ctExpr e@FloatConst{} = inferType TFloat >> return e
 ctExpr e@(Var name _) = do
     info <- astGlobalLookup (varMatch name)
-    maybe (error "name not found in CT traversal?") (inferType . Symbol.varType) info
+    maybe (error "name not found in CT traversal?") (inferType . Symbol.varType . value) info
     return e
 
 ctExpr e@(Mul e1 e2 _) = do

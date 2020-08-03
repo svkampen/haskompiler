@@ -94,7 +94,7 @@ modifyTD :: (c -> c) -> ASTTraversal c ()
 modifyTD f = modifyComponentM traversalData (return . f)
 
 -- | Symbol lookup in an `ASTTraversal`.
-astLocalLookup, astGlobalLookup :: (Symbol -> Bool) -> ASTTraversal c (Maybe Symbol)
+astLocalLookup, astGlobalLookup :: (Symbol -> Bool) -> ASTTraversal c (Maybe SymbolTable)
 astLocalLookup = mapST . localLookup
 astGlobalLookup = mapST . globalLookup
 

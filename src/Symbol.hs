@@ -65,9 +65,13 @@ instance Show SymbolTable where
     show (Node val children) = printf "Node '%s' (children: %s)" (show val) (show children)
     show (LeafNode val)      = printf "Leaf '%s'" (show val)
 
+-- | Context in an STZipper.
 data Ctx where
+    -- | The current node is at the top of the symbol table.
     Top :: Ctx
-    Child :: Ctx -> [SymbolTable] -> Symbol -> [SymbolTable] -> Ctx
+
+    -- | The current node is a child of @Node sym (lefts ++ current:rights)@
+    Child :: Ctx -> Symbol -> [SymbolTable] -> [SymbolTable] -> Ctx
     deriving (Show, Eq)
 
 data Loc c a = Loc { _ctx :: c, _struct :: a} deriving (Show, Eq)
@@ -98,27 +102,38 @@ zipperAddSymbol = struct . addSymbol
 
 -- Symbol table traversal up / down
 up :: MonadFail m => STZipper -> m STZipper
-up (Loc (Child ctx' lefts val rights) node) = return $ Loc ctx' (Node val (lefts ++ node:rights))
+up (Loc (Child ctx' val lefts rights) node) = return $ Loc ctx' (Node val (lefts ++ node:rights))
 up (Loc Top _) = fail "Can't go up past the root node"
 
 down :: MonadFail m => Int -> STZipper -> m STZipper
 down _ (Loc _ (LeafNode _)) = fail "Can't go down a leaf node"
 down idx (Loc ctx (Node val children)) = let (left, node':right) = splitAt idx children
-                                          in return $ Loc (Child ctx left val right) node'
+                                          in return $ Loc (Child ctx val left right) node'
+
+-- | Transform a context along with a current node back into a symbol table node.
+ctxToNode :: Ctx -> SymbolTable -> SymbolTable
+ctxToNode (Child _ parentSym lefts rights) currentNode = Node parentSym (lefts ++ currentNode:rights)
+ctxToNode Top node = node
 
 -- Symbol table lookups
-globalFindMatches :: (Symbol -> Bool) -> STZipper -> [Symbol]
-globalFindMatches matchFn (Loc ctx node) = [ x | x <- value <$> children node, matchFn x ] ++ findMatches' ctx
-    where findMatches' (Child ctx' lefts sym rights) = [ x | x <- map value lefts ++ sym:map value rights, matchFn x ] ++ findMatches' ctx'
-          findMatches' Top = []
+globalFindMatches :: (Symbol -> Bool) -> STZipper -> [SymbolTable]
+globalFindMatches matchFn (Loc ctx node) = [ x | x <- children node, matchFn (value x)] ++ findMatches' ctx node
+    where
+        findMatches' Top _ = []
+        findMatches' ctx@(Child ctx' _ lefts rights) node =
+            let parentNode = ctxToNode ctx node
+             in [ x | x <- (node:lefts ++ parentNode:rights), matchFn (value x) ] ++ findMatches' ctx' parentNode
 
-localFindMatches :: (Symbol -> Bool) -> STZipper -> [Symbol]
-localFindMatches matchFn (Loc ctx node) = [ x | x <- value <$> children node, matchFn x ] ++ findMatches' ctx
-    where findMatches' (Child _ lefts _ rights) = [ x | x <- map value (lefts ++ rights), matchFn x ]
-          findMatches' Top = []
+localFindMatches :: (Symbol -> Bool) -> STZipper -> [SymbolTable]
+localFindMatches matchFn (Loc ctx node) = [ x | x <- children node, matchFn (value x) ] ++ findMatches' ctx node
+    where
+        findMatches' Top _ = []
+        findMatches' (Child _ _ lefts rights) node =
+            let -- parentNode = ctxToNode ctx node
+             in [ x | x <- (node:lefts ++ rights), matchFn (value x) ]
 
-globalLookup :: (Symbol -> Bool) -> STZipper -> Maybe Symbol
+globalLookup :: (Symbol -> Bool) -> STZipper -> Maybe SymbolTable
 globalLookup = (headMay.) . globalFindMatches
 
-localLookup :: (Symbol -> Bool) -> STZipper -> Maybe Symbol
+localLookup :: (Symbol -> Bool) -> STZipper -> Maybe SymbolTable
 localLookup = (headMay.) . localFindMatches

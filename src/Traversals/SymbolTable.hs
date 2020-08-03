@@ -22,7 +22,7 @@ fnMatch _ _ = False
 
 fnRegistrar :: AST.Function -> STTraversal AST.Function
 fnRegistrar fn@AST.Function{..} = do
-    match <- astLocalLookup (fnMatch fnName)
+    match <- (value <$>) <$> astLocalLookup (fnMatch fnName)
     case match of
       Just fn' -> emitDiagnostics [errorAt fn $ printf "wait a minute, hol on...", noteAt fn' "she done already done had herses"]
       Nothing -> do
