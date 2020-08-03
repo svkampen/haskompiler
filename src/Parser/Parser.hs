@@ -106,7 +106,10 @@ term :: Parser Expr
 term = do
     inQuoter <- lift . reader $ qqSupport
 
-    let choices = [try $ parenthesized expr, constant, wrapInSpan (Var <$> identifier), typecast]
+    let choices = [try $ parenthesized expr,
+                   try $ typecast,
+                   try . wrapInSpan $ call CallExpr,
+                   constant, wrapInSpan (Var <$> identifier)]
 
     if inQuoter
        then choice choices <|> antiquotation <?> "term"
@@ -164,14 +167,14 @@ return_ = Return <$> (simpleToken T.Return *> optional expr)
 assignment :: Parser Statement
 assignment = Assign <$> identifier <* simpleToken T.Let <*> expr
 
-call :: Parser Statement
-call = CallStmt <$> identifier <*> parenthesized exprs
+call :: (String -> [Expr] -> a) -> Parser a
+call con = con <$> identifier <*> parenthesized exprs
 
 -- | Any statement
 statement :: Parser Statement
 statement = let nosemis = [if_, while]
                 -- call is combined with try as a call and an assignment start the same way.
-                semis = [try call, assignment, return_, dowhile]
+                semis = [try (call CallStmt), assignment, return_, dowhile]
              in choice (nosemis ++ ((<* semicolon) <$> semis)) <?> "statement"
 
 -- | A (braced) function body
