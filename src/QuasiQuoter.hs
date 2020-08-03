@@ -91,8 +91,26 @@ antiquoterExp (AST.AntiBool s span) = Just $ 'AST.BoolConst `applyConE` TH.mkNam
 antiquoterExp (AST.AntiExpr s span) = Just . TH.varE $ TH.mkName s
 antiquoterExp _ = Nothing
 
+-- | Pattern antiquoter for AST expressions.
+--
+-- Note the special handling, even for non-antiquotation expressions.
+-- When pattern matching, we don't care about spans, and therefore, we
+-- need to replace exact patterns for the spans with @newName "_"@.
+-- The current approach relies on the fact that the spans are the last
+-- argument to an 'Expr' constructor, but a more general approach is possible.
 antiquoterPat :: AST.Expr -> Maybe TH.PatQ
-antiquoterPat (AST.AntiInt s span) = Just $ TH.conP 'AST.IntConst [TH.varP (TH.mkName s), TH.varP . TH.mkName $ "span_" ++ s]
-antiquoterPat (AST.AntiBool s span) = Just $ TH.conP 'AST.BoolConst [TH.varP $ TH.mkName s, TH.varP . TH.mkName $ "span_" ++ s]
+antiquoterPat (AST.AntiInt s _) = Just $ TH.conP 'AST.IntConst [TH.varP (TH.mkName s), TH.varP . TH.mkName $ "span_" ++ s]
+antiquoterPat (AST.AntiBool s _) = Just $ TH.conP 'AST.BoolConst [TH.varP $ TH.mkName s, TH.varP . TH.mkName $ "span_" ++ s]
 antiquoterPat (AST.AntiExpr s _) = Just . TH.varP $ TH.mkName s
-antiquoterPat _ = Nothing
+antiquoterPat exp = Just $ do
+    subpats <- sequence (gmapQ (dataToPatQ (const Nothing `extQ` antiquoterPat)) exp)
+    -- To get a fully-qualified 'Name', we need to do quite a bit of work.
+    -- Adapted from code in `dataToQa` in Language.Haskell.TH.Syntax.
+    let constructor = toConstr exp
+        typeCon     = typeRepTyCon (typeOf exp)
+        tyConPkg    = tyConPackage typeCon
+        tyConMod    = tyConModule typeCon
+        fqName      = mkNameG DataName tyConPkg tyConMod (showConstr constructor)
+    spanName <- newName "_"
+    let pat = ConP fqName (init subpats ++ [VarP spanName])
+    return pat
