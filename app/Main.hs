@@ -8,10 +8,10 @@ import Parser.Configuration
 import Symbol (topLoc, symTable)
 import Traversal
 import Traversals.SymbolTable
+import Traversals.CheckTypes
 import Text.Megaparsec
 import System.Exit
 import Data.Generics hiding (typeRep)
-import Control.Monad.State
 import Errors
 import QuasiQuoter (cvexpr)
 import Metadata (getSpan)
@@ -49,7 +49,7 @@ main = do
 
   let result = do
           tree <- runWithConfig (PConfig True) (decls <* eof) fname text
-          return $ runState (unASTT $ stTraversal (cF tree)) (TraversalState (topLoc symTable) [] ())
+          return . runCTTraversal . runSTTraversal $ (tree, (TraversalState (topLoc symTable) [] ()))
 
   case result of
     Left err -> showDiagnostics . pure . toDiagnostic $ err
