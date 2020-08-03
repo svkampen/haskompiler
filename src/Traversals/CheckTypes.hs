@@ -1,19 +1,19 @@
-{-# LANGUAGE QuasiQuotes, ScopedTypeVariables, TypeFamilies, TypeApplications #-}
+{-# LANGUAGE DataKinds, QuasiQuotes, ScopedTypeVariables, TypeFamilies, TypeApplications #-}
 module Traversals.CheckTypes
     (ctTraversal, runCTTraversal)
     where
 
-import QuasiQuoter
+import GHC.Records
 import Traversal
 import AST
 import Errors
 import Symbol
 import Data.Data hiding (typeRep)
-import Data.Generics hiding (typeRep)
 import Type.Reflection
 import Control.Monad.State
 import Text.Printf
 import Control.Lens
+import Debug.Trace
 
 newtype TypeInfo = Info { inferredType :: Type } deriving (Show)
 
@@ -27,7 +27,11 @@ getInferredType = mapComponent traversalData (\(Info t) -> t)
 
 varMatch :: String -> (Symbol -> Bool)
 varMatch s v@Variable{} = Symbol.name v == s
-varMatch s _ = False
+varMatch _ _ = False
+
+fnMatch :: String -> (Symbol -> Bool)
+fnMatch s f@Symbol.Function{} = Symbol.name f == s
+fnMatch _ _ = False
 
 boRefuseBool :: Expr -> CTTraversal ()
 boRefuseBool e = do
@@ -45,18 +49,42 @@ ctBinop binopName totalExpr l r = do
         noteAt r (printf "Right operand has type %s" $ show tr)]
     inferType tl
 
+type Params = [Expr]
+
+checkCallParameters :: SymbolTable -> Params -> CTTraversal ()
+checkCallParameters (Node _ children) exprs = mapM_ checkParam (zip children exprs)
+    where checkParam (LeafNode var, exp) = do
+            expType <- getInferredType << travDown exp
+            let varType = (getField @"varType" var)
+            when (expType /= varType) $ do
+                emitDiagnostic (errorAt exp $ printf "Invalid type in function call, expected %s but expression has type %s" (show varType) (show expType))
+
 ctExpr :: Expr -> CTTraversal Expr
 ctExpr e@IntConst{} = inferType TInt >> return e
 ctExpr e@BoolConst{} = inferType TBool >> return e
 ctExpr e@FloatConst{} = inferType TFloat >> return e
+ctExpr (Neg e _) = ctExpr e
+ctExpr e@(CallExpr name params _) = do
+    info <- astGlobalLookup (fnMatch name)
+    traceM (show info)
+    case info of
+        Nothing -> error "name not found in CT traversal"
+        Just fnNode -> do
+            inferType . returnType $ value fnNode
+            when (length params /= numParams (value fnNode)) $
+                emitDiagnostic (errorAt e "Invalid number of function parameters")
+            checkCallParameters fnNode params
+    return e
+
 ctExpr e@(Var name _) = do
     info <- astGlobalLookup (varMatch name)
     maybe (error "name not found in CT traversal?") (inferType . Symbol.varType . value) info
     return e
 
-ctExpr e@(Mul e1 e2 _) = do
-    ctBinop "*" e e1 e2
-    return e
+ctExpr e@(Add e1 e2 _) = ctBinop "+" e e1 e2 >> return e
+ctExpr e@(Sub e1 e2 _) = ctBinop "-" e e1 e2 >> return e
+ctExpr e@(Div e1 e2 _) = ctBinop "/" e e1 e2 >> return e
+ctExpr e@(Mul e1 e2 _) = ctBinop "*" e e1 e2 >> return e
 
 ctExpr e@(Mod e1 e2 _) = do
     ctBinop "%" e e1 e2
