@@ -3,6 +3,9 @@ module Traversal
     (
       ASTTraversal(..), TraversalState(..),
 
+      -- Run a traversal
+      runASTTraversal,
+
       -- Extra generic traversals
       everywhereM', everywhereUntilMatchM',
 
@@ -40,6 +43,9 @@ makeLenses ''TraversalState
 
 -- | The AST traversal monad. Simply a wrapper around `State`.
 newtype ASTTraversal custom a = ASTTraversal { unASTT :: State (TraversalState custom) a } deriving (Functor, Applicative, Monad, MonadState (TraversalState custom))
+
+runASTTraversal :: ASTTraversal custom a -> TraversalState custom -> (a, TraversalState custom)
+runASTTraversal traversal = runState (unASTT traversal)
 
 instance MonadFail (ASTTraversal cC) where
     fail = error
