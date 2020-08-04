@@ -103,11 +103,11 @@ data Funbody = FB {
 } deriving (Show, Typeable, Data)
 
 -- | A statement.
-data Statement = Assign String Expr
-               | CallStmt String [Expr]
-               | If Expr [Statement] [Statement]
-               | While LoopType Expr [Statement]
-               | For VarDecl Expr Expr (Maybe Expr) [Statement]
-               | Return (Maybe Expr)
-                   deriving (Show, Data, Typeable)
+data Statement = Assign String Expr SourceSpan
+               | CallStmt String [Expr] SourceSpan
+               | If Expr [Statement] [Statement] SourceSpan
+               | While LoopType Expr [Statement] SourceSpan
+               | For VarDecl Expr Expr (Maybe Expr) [Statement] SourceSpan
+               | Return (Maybe Expr) SourceSpan
+                   deriving (Show, Data, Typeable, Generic, HasSpan)
 

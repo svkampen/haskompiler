@@ -108,7 +108,7 @@ term = do
 
     let choices = [try $ parenthesized expr,
                    try $ typecast,
-                   try . wrapInSpan $ call CallExpr,
+                   try $ call CallExpr,
                    constant, wrapInSpan (Var <$> identifier)]
 
     if inQuoter
@@ -126,7 +126,7 @@ exprs = ((:) <$> expr <*> many (simpleToken T.Comma *> expr)) <|> pure []
 
 -- Do/while loop
 dowhile :: Parser Statement
-dowhile = simpleToken T.Do *> do
+dowhile = wrapInSpan $ simpleToken T.Do *> do
     block <- braced (many statement)
     _ <- simpleToken T.While
     condition <- parenthesized expr
@@ -134,7 +134,7 @@ dowhile = simpleToken T.Do *> do
 
 -- While loop
 while :: Parser Statement
-while = simpleToken T.While *> do
+while = wrapInSpan $ simpleToken T.While *> do
     condition <- parenthesized expr
     block <- braced (many statement)
     return $ While LTWhile condition block
@@ -155,20 +155,20 @@ withPos :: Data a => a -> T.WithPos a
 withPos x = x <$ sconcat ((NE.fromList . catMaybes) (gmapQ getWithPos x))
 
 if_ :: Parser Statement
-if_ = simpleToken T.If *> do
+if_ = wrapInSpan $ simpleToken T.If *> do
     condition <- parenthesized expr
     if_block <- braced (many statement)
     else_block <- option [] (simpleToken T.Else *> braced (many statement))
     return $ If condition if_block else_block
 
 return_ :: Parser Statement
-return_ = Return <$> (simpleToken T.Return *> optional expr)
+return_ = wrapInSpan $ Return <$> (simpleToken T.Return *> optional expr)
 
 assignment :: Parser Statement
-assignment = Assign <$> identifier <* simpleToken T.Let <*> expr
+assignment = wrapInSpan $ Assign <$> identifier <* simpleToken T.Let <*> expr
 
-call :: (String -> [Expr] -> a) -> Parser a
-call con = con <$> identifier <*> parenthesized exprs
+call :: (String -> [Expr] -> SourceSpan -> a) -> Parser a
+call con = wrapInSpan $ con <$> identifier <*> parenthesized exprs
 
 -- | Any statement
 statement :: Parser Statement
