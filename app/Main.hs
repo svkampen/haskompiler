@@ -1,20 +1,20 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, FlexibleContexts, RecordWildCards, RankNTypes, ScopedTypeVariables #-}
 module Main where
 
-import System.Environment (getArgs)
 import qualified AST
-import Parser.Parser (decls, runWithConfig)
-import Parser.Configuration
-import Symbol (topLoc, symTable)
-import Traversal
-import Traversals.SymbolTable
-import Traversals.CheckTypes
-import Text.Megaparsec
-import System.Exit
 import Data.Generics hiding (typeRep)
 import Errors
-import QuasiQuoter (cvexpr)
 import Metadata (getSpan)
+import Parser.Configuration
+import Parser.Parser (decls, runWithConfig)
+import QuasiQuoter (cvexpr)
+import Symbol (symTable, topLoc)
+import System.Environment (getArgs)
+import System.Exit
+import Text.Megaparsec
+import Traversal
+import Traversals.CheckTypes
+import Traversals.SymbolTable
 
 parseArgs :: [String] -> IO [String]
 parseArgs [] = die "Usage: haskompiler <filename.civic>"
@@ -41,15 +41,14 @@ constFold exp = exp
 
 cF :: Data a => a -> a
 cF = everywhere (mkT constFold)
-
 main :: IO ()
 main = do
   [fname] <- parseArgs =<< getArgs
   text <- readFile fname
 
   let result = do
-          tree <- runWithConfig (PConfig True) (decls <* eof) fname text
-          return . runCTTraversal . runSTTraversal $ (tree, (TraversalState (topLoc symTable) [] ()))
+        tree <- runWithConfig (PConfig True) (decls <* eof) fname text
+        return . runCTTraversal . runSTTraversal $ (cF tree, TraversalState (topLoc symTable) [] ())
 
   case result of
     Left err -> showDiagnostics . pure . toDiagnostic $ err
@@ -59,6 +58,7 @@ main = do
 printResultTuple :: Show a => (a, TraversalState custom) -> IO ()
 printResultTuple (res, TraversalState{..}) =
   case _errors of
-    [] -> print res
-    es -> if containsErrors es then showDiagnostics es
-                               else showDiagnostics es >> print res
+      [] -> print res
+      es -> if containsErrors es
+                then showDiagnostics es
+                else showDiagnostics es >> print res
