@@ -15,7 +15,7 @@ module Symbol
       struct,
 
       topLoc, symTable,
-      down, up,
+      down, up, downToMatch,
       localLookup, globalLookup, zipperAddSymbol
     )
     where
@@ -122,6 +122,14 @@ down :: MonadFail m => Int -> STZipper -> m STZipper
 down _ (Loc _ (LeafNode _)) = fail "Can't go down a leaf node"
 down idx (Loc ctx (Node val children)) = let (left, node':right) = splitAt idx children
                                           in return $ Loc (Child ctx val left right) node'
+
+downToMatch :: MonadFail m => (Symbol -> Bool) -> STZipper -> m STZipper
+downToMatch _ (Loc _ (LeafNode _)) = fail "Can't go down a leaf node"
+downToMatch fn (Loc ctx (Node val children)) = do
+    let (left, right) = span (not . fn . value) children
+    case right of
+        [] -> fail "No match found"
+        (node':rights) -> return $ Loc (Child ctx val left rights) node'
 
 -- | Transform a context along with a current node back into a symbol table node.
 ctxToNode :: Ctx -> SymbolTable -> SymbolTable

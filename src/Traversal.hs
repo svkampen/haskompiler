@@ -13,7 +13,7 @@ module Traversal
       emitDiagnostic, emitDiagnostics,
 
       -- Symbol table modifications (lifted into ASTTraversal)
-      astSTup, astSTdown, astAddSymbol, mapSTM, modifySTM, mapST, astGlobalLookup, astLocalLookup,
+      astSTup, astSTdown, astSTdownToMatch, astAddSymbol, mapSTM, modifySTM, mapST, astGlobalLookup, astLocalLookup,
 
       -- Traversal data modification
       modifyTD,
@@ -106,9 +106,13 @@ astAddSymbol = modifySTM . zipperAddSymbol
 astSTup :: ASTTraversal c ()
 astSTup = modifySTM up
 
--- | Movement downwards in the symbol table zipper of an `ASTTraversal`.
+-- | Movement downwards by index in the symbol table zipper of an `ASTTraversal`.
 astSTdown :: Int -> ASTTraversal c ()
 astSTdown = modifySTM . down
+
+-- | Movement downwards by predicate in the symbol table zipper of an `ASTTraversal`.
+astSTdownToMatch :: (Symbol -> Bool) -> ASTTraversal c ()
+astSTdownToMatch = modifySTM . downToMatch
 
 -- | Run a generic, monadic function everywhere while it returns @Nothing@ (indicating the absence of a type-specific case).
 -- Terminate when a type-specific case (returning @Just _@) is run.
