@@ -78,7 +78,7 @@ data Expr
 data VarDecl = VarDecl { vtype :: Type, name :: String, initializer :: Maybe Expr, __span :: SourceSpan } deriving (Show, Eq, Data, Typeable, Generic, HasSpan)
 
 -- | A global variable declaration.
-data Global = Global { isExtern :: Bool, varType :: Type, name :: String, initializer :: Maybe Expr, __span :: SourceSpan } deriving (Show, Typeable, Data, Generic, HasSpan)
+data Global = Global { visibility :: Visibility, varType :: Type, name :: String, initializer :: Maybe Expr, __span :: SourceSpan } deriving (Show, Typeable, Data, Generic, HasSpan)
 
 -- | Function parameter declaration.
 data Param = Param Type String SourceSpan deriving (Show, Data, Generic, HasSpan)

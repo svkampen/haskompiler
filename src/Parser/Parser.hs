@@ -190,7 +190,19 @@ params = ((:) <$> param <*> many (simpleToken T.Comma *> param)) <|> pure []
 
 -- | A global variable declaration
 global :: Parser Global
-global = wrapInSpan $ Global <$> exists (simpleToken T.Extern) <*> anyType <*> identifier <*> optional (simpleToken T.Let *> expr) <* semicolon
+global = wrapInSpan $ do
+    visibility <- optional (simpleToken T.Export <|> simpleToken T.Extern)
+    let global = case visibility of {
+        Just T.Export -> Global Export;
+        Just T.Extern -> Global Extern;
+        Nothing -> Global Internal
+    }
+
+    global' <- global <$> anyType <*> identifier
+
+    case visibility of
+        Just T.Extern -> global' Nothing <$ semicolon
+        _ -> global' <$> optional (simpleToken T.Let *> expr) <* semicolon
 
 function :: Parser Function
 function = wrapInSpan $ do
