@@ -10,7 +10,7 @@ module Traversal
       everywhereM', everywhereUntilMatchM',
 
       -- Error handling
-      emitDiagnostic, emitDiagnostics,
+      emitDiagnostic, emitDiagnostics, hasError, (❌),
 
       -- Symbol table modifications (lifted into ASTTraversal)
       astSTup, astSTdown, astSTdownToMatch, astAddSymbol, mapSTM, modifySTM, mapST, astGlobalLookup, astLocalLookup,
@@ -29,7 +29,8 @@ module Traversal
 import Control.Lens hiding (children)
 import Control.Monad.State
 import Symbol
-import Errors (Diagnostic(..))
+import Errors (Diagnostic(..), errorAt)
+import Metadata (HasSpan)
 import Data.Generics
 
 -- | The state component of an 'ASTTraversal'.
@@ -57,6 +58,15 @@ emitDiagnostic d = modifyComponent errors (d:)
 -- | Emit a list of diagnostics. See 'emitDiagnostic'.
 emitDiagnostics :: [Diagnostic] -> ASTTraversal c ()
 emitDiagnostics = mapM_ emitDiagnostic
+
+-- | Emit an error diagnostic at a given location. Shorthand.
+hasError :: HasSpan a => a -> String -> ASTTraversal c ()
+hasError = (emitDiagnostic.) . errorAt
+
+-- | Infix synonym for 'hasError'.
+(❌) :: HasSpan a => a -> String -> ASTTraversal c ()
+(❌) = hasError
+infix 3 ❌
 
 -- | Monadic modification over state.
 modifyM :: MonadState s m => (s -> m s) -> m ()
