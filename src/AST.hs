@@ -30,12 +30,18 @@ import Metadata (SourceSpan, HasSpan)
 import GHC.Generics
 import Data.Typeable
 import Data.Data
+import Text.Printf
 
 type WithoutSpan a = (SourceSpan -> a)
 
 data LoopType = LTWhile | LTDoWhile deriving (Eq, Enum, Bounded, Show, Data, Typeable)
 
 data Type = TInt | TVoid | TBool | TFloat deriving (Eq, Ord, Bounded, Enum, Data, Typeable)
+
+instance PrintfArg Type where
+    formatArg x fmt | fmtChar (vFmt 'T' fmt) == 'T' =
+        formatString (show x) (fmt {fmtChar = 's', fmtPrecision = Nothing})
+    formatArg _ fmt = errorBadFormat $ fmtChar fmt
 
 instance Show Type where
   show TInt = "int"
