@@ -53,8 +53,8 @@ instance HasSpan Symbol where
     getSpan = definition
 
 instance Show Symbol where
-    show Variable{..} = printf "%s %s" (show varType) name
-    show Function{..} = printf "%s %s()" (show returnType) name
+    show Variable{..} = printf "%T %s" varType name
+    show Function{..} = printf "%T %s()" returnType name
     show Program = "<top-level program>"
 
 data SymbolTable = Node { value :: Symbol, _children :: [SymbolTable] } | LeafNode { value :: Symbol }
