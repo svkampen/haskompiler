@@ -21,7 +21,7 @@ module AST
         Statement(..), LoopType(..),
 
         -- Expressions
-        Expr(..)
+        Expr(..), BinopType(..)
     )
     where
 
@@ -55,6 +55,9 @@ data Decl = GlobalDecl Global | FunctionDecl Function deriving (Show, Data, Type
 -- | The visibility of a declaration.
 data Visibility = Export | Extern | Internal deriving (Eq, Show, Typeable, Data, Enum, Bounded)
 
+data BinopType = Add | Sub | Mul | Div | Mod | LessThan | LessEqual | GreaterEqual | GreaterThan | Equal | NotEqual | And | Or
+    deriving (Eq, Show, Ord, Enum, Bounded, Data, Typeable)
+
 -- | A Civic expression.
 data Expr
   = Var String SourceSpan
@@ -63,19 +66,7 @@ data Expr
   | BoolConst Bool SourceSpan
   | Not Expr SourceSpan
   | Neg Expr SourceSpan
-  | Add Expr Expr SourceSpan
-  | Sub Expr Expr SourceSpan
-  | Mul Expr Expr SourceSpan
-  | Div Expr Expr SourceSpan
-  | Mod Expr Expr SourceSpan
-  | LessThan Expr Expr SourceSpan
-  | LessEqual Expr Expr SourceSpan
-  | GreaterEqual Expr Expr SourceSpan
-  | GreaterThan Expr Expr SourceSpan
-  | Equal Expr Expr SourceSpan
-  | NotEqual Expr Expr SourceSpan
-  | And Expr Expr SourceSpan
-  | Or Expr Expr SourceSpan
+  | Binop BinopType Expr Expr SourceSpan
   | Cast Type Expr SourceSpan
   | CallExpr String [Expr] SourceSpan
   | AntiExpr String SourceSpan

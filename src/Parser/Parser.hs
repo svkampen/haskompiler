@@ -39,12 +39,11 @@ wrapInSpan parser = do
     loc' <- getPreviousLocation
     return . f $ spanBetween loc loc'
 
-lbinop, rbinop :: HasSpan a => (a -> a -> SourceSpan -> a) -> T.CivicToken -> Operator Parser a
-
-binop :: (HasSpan a, HasSpan b) => (Parser (a -> b -> t1) -> t2) -> (a -> b -> SourceSpan -> t1) -> T.CivicToken -> t2
+binop :: (Parser (Expr -> Expr -> Expr) -> t) -> BinopType -> T.CivicToken -> t
 binop btype con tok = btype $ simpleToken tok *> do
-    return (\e1 e2 -> con e1 e2 (getSpan e1 <> getSpan e2))
+    return (\e1 e2 -> (Binop con) e1 e2 (getSpan e1 <> getSpan e2))
 
+lbinop, rbinop :: BinopType -> T.CivicToken -> Operator Parser Expr
 lbinop = binop InfixL
 rbinop = binop InfixR
 
