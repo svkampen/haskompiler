@@ -94,8 +94,10 @@ type STZipper = Loc Ctx SymbolTable
 topLoc :: SymbolTable -> STZipper
 topLoc = Loc Top
 
-fun, var :: AST.Type -> String -> SourceSpan -> Symbol
-fun ty name = Function name ty AST.Internal 0 0
+fun :: AST.Type -> String -> Int -> SourceSpan -> Symbol
+fun ty name params = Function name ty AST.Internal params 0
+
+var :: AST.Type -> String -> SourceSpan -> Symbol
 var ty name = Variable name ty AST.Internal 0 0 0
 
 symTable :: SymbolTable
