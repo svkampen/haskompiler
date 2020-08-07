@@ -84,7 +84,7 @@ data VarDecl = VarDecl { vtype :: Type, name :: String, initializer :: Maybe Exp
 data Global = Global { isExtern :: Bool, varType :: Type, name :: String, initializer :: Maybe Expr, __span :: SourceSpan } deriving (Show, Typeable, Data, Generic, HasSpan)
 
 -- | Function parameter declaration.
-data Param = Param Type String deriving (Show, Data)
+data Param = Param Type String SourceSpan deriving (Show, Data, Generic, HasSpan)
 
 -- | A function declaration, optionally with body
 data Function = Function {

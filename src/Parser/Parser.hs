@@ -183,7 +183,7 @@ funbody = braced $ FB <$> many vardecl <*> many statement
 
 -- | A parameter declaration (e.g. "int a")
 param :: Parser Param
-param = Param <$> anyType <*> identifier
+param = wrapInSpan $ Param <$> anyType <*> identifier
 
 -- | Comma-separated parameter declarations (e.g. "int a, float b")
 params :: Parser [Param]
