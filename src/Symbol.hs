@@ -8,6 +8,9 @@ module Symbol
       -- Symbol creation functions
       var, fun,
 
+      -- Match functions
+      varMatch, fnMatch,
+
       -- Lenses
       struct,
 
@@ -56,6 +59,14 @@ instance Show Symbol where
 
 data SymbolTable = Node { value :: Symbol, _children :: [SymbolTable] } | LeafNode { value :: Symbol }
     deriving (Eq)
+
+varMatch :: String -> (Symbol -> Bool)
+varMatch s v@Variable{} = Symbol.name v == s
+varMatch _ _ = False
+
+fnMatch :: String -> (Symbol -> Bool)
+fnMatch s f@Symbol.Function{} = Symbol.name f == s
+fnMatch _ _ = False
 
 children :: SymbolTable -> [SymbolTable]
 children (LeafNode _) = []

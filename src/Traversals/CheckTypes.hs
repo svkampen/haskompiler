@@ -25,13 +25,6 @@ inferType t = modifyTD (const (Info t))
 getInferredType :: CTTraversal Type
 getInferredType = mapComponent traversalData (\(Info t) -> t)
 
-varMatch :: String -> (Symbol -> Bool)
-varMatch s v@Variable{} = Symbol.name v == s
-varMatch _ _ = False
-
-fnMatch :: String -> (Symbol -> Bool)
-fnMatch s f@Symbol.Function{} = Symbol.name f == s
-fnMatch _ _ = False
 
 boRefuseBool :: Expr -> CTTraversal ()
 boRefuseBool e = do
