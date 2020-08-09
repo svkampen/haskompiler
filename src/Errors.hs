@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, RecordWildCards, RankNTypes, FlexibleInstances, ScopedTypeVariables, ExistentialQuantification #-}
+{-# LANGUAGE TypeFamilies, RecordWildCards, RankNTypes, FlexibleInstances, ScopedTypeVariables #-}
 module Errors
     (Diagnostic(..), IsDiagnostic(..), errorAt, noteAt, warningAt, ComponentError(..), showDiagnostics, isError, containsErrors)
     where
@@ -66,39 +66,27 @@ instance IsDiagnostic ComponentError where
     toDiagnostic (ParserError peb) = genParserDiagnostic peb
 
 -- | Compiler diagnostics (errors, warnings, and notes).
---
--- Uses existential quantification to store a value which is an instance of `HasSpan`,
--- which is taken to be the location of the diagnostic, along with a message describing the diagnostic.
-data Diagnostic = forall a. HasSpan a => ErrorWithLoc { loc :: a, err :: String }   -- ^ A `Diagnostic` representing an error.
-                | forall a. HasSpan a => NoteWithLoc { loc :: a, err :: String }    -- ^ A `Diagnostic` representing a note.
-                | forall a. HasSpan a => WarningWithLoc { loc :: a, err :: String } -- ^ A `Diagnostic` representing a warning.
-
--- | \'Lift\' a function on `HasSpan` instances to a function on `Diagnostic`s
-liftD :: forall b. (forall a. HasSpan a => a -> b) -> Diagnostic -> b
-liftD f (ErrorWithLoc l _) = f l
-liftD f (NoteWithLoc l _ ) = f l
-liftD f (WarningWithLoc l _) = f l
+data Diagnostic = ErrorWithLoc { loc :: SourceSpan, err :: String }   -- ^ A `Diagnostic` representing an error.
+                | NoteWithLoc { loc :: SourceSpan, err :: String }    -- ^ A `Diagnostic` representing a note.
+                | WarningWithLoc { loc :: SourceSpan, err :: String } -- ^ A `Diagnostic` representing a warning.
 
 -- | `errorAt loc msg` constructs an error at a location.
 errorAt :: HasSpan a => a -> String -> Diagnostic
-errorAt = ErrorWithLoc
+errorAt = ErrorWithLoc . getSpan
 
 -- | `noteAt loc msg` constructs a note at a location.
 noteAt :: HasSpan a => a -> String -> Diagnostic
-noteAt = NoteWithLoc
+noteAt = NoteWithLoc . getSpan
 
 -- | `warningAt loc msg` constructs a warning at a location.
 warningAt :: HasSpan a => a -> String -> Diagnostic
-warningAt = WarningWithLoc
-
-instance HasSpan Diagnostic where
-    getSpan = liftD getSpan
+warningAt = WarningWithLoc . getSpan
 
 instance MonadFail (Either Diagnostic) where
-    fail = Left . ErrorWithLoc ()
+    fail = Left . ErrorWithLoc (getSpan ())
 
 instance Show Diagnostic where
-    show ewl = printf "Error at %s: %s" (show $ liftD getSpan ewl) (err ewl)
+    show ewl = printf "Error at %s: %s" (show $ loc ewl) (err ewl)
 
 -- | `splitBetween n n' lst` splits a list into a 3-tuple of (before `n`, between n and `n', at and after `n')
 splitBetween :: Int -> Int -> [b] -> ([b], [b], [b])
@@ -123,9 +111,9 @@ isError _ = False
 -- | Print a list of `Diagnostic`s.
 showDiagnostics :: [Diagnostic] -> IO ()
 showDiagnostics = sequence_ . intersperse newline . map showDiagnostic . reverse
-    where showDiagnostic (ErrorWithLoc loc msg) = showDiagnostic' (getSpan loc) msg "error" Red
-          showDiagnostic (NoteWithLoc loc msg) = showDiagnostic' (getSpan loc) msg "note" Cyan
-          showDiagnostic (WarningWithLoc loc msg) = showDiagnostic' (getSpan loc) msg "warning" Magenta
+    where showDiagnostic (ErrorWithLoc loc msg) = showDiagnostic' loc msg "error" Red
+          showDiagnostic (NoteWithLoc loc msg) = showDiagnostic' loc msg "note" Cyan
+          showDiagnostic (WarningWithLoc loc msg) = showDiagnostic' loc msg "warning" Magenta
 
           setBold = setSGR [SetConsoleIntensity BoldIntensity]
           setColor c = setSGR [SetColor Foreground Vivid c]

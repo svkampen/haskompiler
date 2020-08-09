@@ -33,7 +33,7 @@ toLineCol = (,) <$> unPos . sourceLine <*> unPos . sourceColumn
 showModifiedDiagnostic :: CharPos -> CharPos -> ComponentError -> IO ()
 showModifiedDiagnostic (sLine, sCol) _ err =
     let ewl@(ErrorWithLoc _ msg) = toDiagnostic err
-        (SourceSpan start end _) = getSpan ewl
+        (SourceSpan start end _) = loc ewl
         filename = sourceName start
         (startLine, startCol) = toLineCol start
         (endLine, endCol) = toLineCol end
